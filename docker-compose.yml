@@ -60,6 +60,8 @@ services:
       - "traefik.http.services.crm-api.loadbalancer.server.port=3001"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
       - "traefik.http.routers.crm-api.priority=10"
+      - "traefik.http.middlewares.crm-api-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.crm-api.middlewares=crm-api-stripprefix"
     depends_on:
       postgres:
         condition: service_healthy

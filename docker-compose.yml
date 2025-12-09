@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_password}
       POSTGRES_DB: ${POSTGRES_DB:-crm_db}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"  # Use 5433 to avoid conflict with existing postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
     image: redis:7-alpine
     container_name: crm-redis
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6380}:6379"  # Use 6380 to avoid conflict with existing redis
     volumes:
       - redis_data:/data
     healthcheck:
@@ -52,7 +52,7 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-this-32-character-key}
       PORT: 3001
       NODE_ENV: production
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://72.61.172.91:3000}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
@@ -73,7 +73,7 @@ services:
       dockerfile: Dockerfile
     container_name: crm-frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://72.61.172.91:3001}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

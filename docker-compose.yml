@@ -52,9 +52,14 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-this-32-character-key}
       PORT: 3001
       NODE_ENV: production
-      FRONTEND_URL: ${FRONTEND_URL:-http://72.61.172.91:3000}
-    ports:
-      - "${BACKEND_PORT:-3001}:3001"
+      FRONTEND_URL: ${FRONTEND_URL:-http://72.61.172.91}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crm-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.crm-api.entrypoints=web"
+      - "traefik.http.services.crm-api.loadbalancer.server.port=3001"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.crm-api.priority=10"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,6 +70,7 @@ services:
     command: sh -c "npx prisma migrate deploy && node dist/main.js"
     networks:
       - crm-network
+      - traefik
     restart: unless-stopped
 
   frontend:
@@ -73,13 +79,19 @@ services:
       dockerfile: Dockerfile
     container_name: crm-frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://72.61.172.91:3001}
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://72.61.172.91/api}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crm-frontend.rule=Host(`${FRONTEND_DOMAIN:-72.61.172.91}`)"
+      - "traefik.http.routers.crm-frontend.entrypoints=web"
+      - "traefik.http.services.crm-frontend.loadbalancer.server.port=3000"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.crm-frontend.priority=1"
     depends_on:
       - backend
     networks:
       - crm-network
+      - traefik
     restart: unless-stopped
 
 volumes:
@@ -89,4 +101,7 @@ volumes:
 networks:
   crm-network:
     driver: bridge
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
 

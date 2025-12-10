@@ -1,6 +1,9 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Install OpenSSL and required libraries for Prisma
+RUN apk add --no-cache openssl1.1-compat libc6-compat
+
 WORKDIR /app
 
 # Copy package files
@@ -22,6 +25,9 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine AS production
 
+# Install OpenSSL and required libraries for Prisma
+RUN apk add --no-cache openssl1.1-compat libc6-compat
+
 WORKDIR /app
 
 # Install only production dependencies
@@ -31,7 +37,7 @@ COPY prisma ./prisma/
 # Install production dependencies (this will skip postinstall since prisma isn't installed yet)
 RUN npm ci --only=production --ignore-scripts
 
-# Install prisma CLI (needed for migrations in start.sh)
+# Install prisma CLI (needed for migrations)
 RUN npm install --no-save prisma@^5.19.1 && npx prisma generate
 
 # Copy built application from builder

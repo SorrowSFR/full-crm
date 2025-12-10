@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { campaignId: string } }
+  { params }: { params: Promise<{ campaignId: string }> }
 ) {
   try {
     const user = await getAuthenticatedUser(request);
@@ -14,9 +14,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { campaignId } = await params;
     const campaign = await prisma.campaign.findFirst({
       where: {
-        campaign_id: params.campaignId,
+        campaign_id: campaignId,
         org_id: user.org_id,
       },
       include: {

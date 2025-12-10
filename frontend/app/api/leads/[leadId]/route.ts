@@ -5,7 +5,7 @@ import { decrypt } from '@/lib/encryption';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { leadId: string } }
+  { params }: { params: Promise<{ leadId: string }> }
 ) {
   try {
     const user = await getAuthenticatedUser(request);
@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { leadId } = await params;
     const lead = await prisma.lead.findFirst({
       where: {
-        lead_id: params.leadId,
+        lead_id: leadId,
         campaign: {
           org_id: user.org_id,
         },

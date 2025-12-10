@@ -63,7 +63,7 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="campaign-${params.campaignId}.csv"`,
+        'Content-Disposition': `attachment; filename="campaign-${campaignId}.csv"`,
       },
     });
   } catch (error: any) {

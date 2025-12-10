@@ -231,7 +231,9 @@ Your frontend will be live at `https://your-project.vercel.app`
 3. **Select your repository** and set:
    - **Root Directory**: `backend`
    - **Build Command**: `npm install && npx prisma generate && npm run build`
-   - **Start Command**: `npx prisma migrate deploy && npm run start:prod`
+   - **Start Command**: `./start.sh` (or `npx prisma migrate deploy && npm start`)
+   
+   **Note**: The `start.sh` script handles Prisma setup and migrations automatically. Alternatively, you can use the start command above.
 
 4. **Add Environment Variables**:
    ```env

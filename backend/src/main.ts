@@ -13,8 +13,34 @@ async function bootstrap() {
     }),
   );
 
+  // CORS configuration - support multiple origins for Vercel deployments
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const allowedOrigins = frontendUrl.includes(',')
+    ? frontendUrl.split(',').map(url => url.trim())
+    : [frontendUrl];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin exactly matches allowed origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // Allow Vercel preview deployments (any *.vercel.app domain if FRONTEND_URL is vercel.app)
+      if (frontendUrl.includes('vercel.app') && origin.includes('.vercel.app')) {
+        return callback(null, true);
+      }
+      
+      // Allow localhost for development
+      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+        return callback(null, true);
+      }
+      
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   });
 

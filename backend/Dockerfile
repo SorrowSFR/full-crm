@@ -37,6 +37,10 @@ RUN npm install --no-save prisma@^5.19.1 && npx prisma generate && npm uninstall
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy start script
+COPY start.sh ./
+RUN chmod +x start.sh
+
 # Expose port
 EXPOSE 3001
 
@@ -44,6 +48,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start application
-CMD ["node", "dist/main.js"]
+# Start application using start.sh script
+CMD ["./start.sh"]
 

@@ -2,23 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifySignature } from '@/lib/hmac';
 import { decrypt } from '@/lib/encryption';
+import { LeadOutcome, LeadStatus, CampaignStatus } from '@prisma/client';
 
-const CampaignStatus = {
-  WAITING_FOR_CALLBACKS: 'WAITING_FOR_CALLBACKS',
-  COMPLETED: 'COMPLETED',
-} as const;
-
-const LeadStatus = {
-  COMPLETED: 'COMPLETED',
-} as const;
-
-const LeadOutcomeMap: Record<string, string> = {
-  qualified: 'QUALIFIED',
-  site_visit_scheduled: 'SITE_VISIT_SCHEDULED',
-  meeting_scheduled: 'MEETING_SCHEDULED',
-  no_answer: 'NO_ANSWER',
-  failed: 'FAILED',
-  validation_error: 'VALIDATION_ERROR',
+const LeadOutcomeMap: Record<string, LeadOutcome> = {
+  qualified: LeadOutcome.QUALIFIED,
+  site_visit_scheduled: LeadOutcome.SITE_VISIT_SCHEDULED,
+  meeting_scheduled: LeadOutcome.MEETING_SCHEDULED,
+  no_answer: LeadOutcome.NO_ANSWER,
+  failed: LeadOutcome.FAILED,
+  validation_error: LeadOutcome.VALIDATION_ERROR,
 };
 
 export async function POST(request: NextRequest) {
@@ -70,7 +62,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const mappedOutcome = LeadOutcomeMap[outcome] || 'FAILED';
+    const mappedOutcome = LeadOutcomeMap[outcome] || LeadOutcome.FAILED;
 
     // Update lead
     const updatedLead = await prisma.lead.update({
@@ -127,7 +119,7 @@ async function processNextQueuedCampaign(orgId: string) {
       where: {
         org_id: orgId,
         status: {
-          in: ['RUNNING', 'WAITING_FOR_CALLBACKS'],
+          in: [CampaignStatus.RUNNING, CampaignStatus.WAITING_FOR_CALLBACKS],
         },
       },
     });
@@ -140,12 +132,12 @@ async function processNextQueuedCampaign(orgId: string) {
     const queuedCampaign = await prisma.campaign.findFirst({
       where: {
         org_id: orgId,
-        status: 'QUEUED',
+        status: CampaignStatus.QUEUED,
       },
       include: {
         leads: {
           where: {
-            status: 'PENDING',
+            status: LeadStatus.PENDING,
           },
         },
       },
@@ -162,9 +154,9 @@ async function processNextQueuedCampaign(orgId: string) {
     const updated = await prisma.campaign.updateMany({
       where: {
         campaign_id: queuedCampaign.campaign_id,
-        status: 'QUEUED',
+        status: CampaignStatus.QUEUED,
       },
-      data: { status: 'RUNNING' },
+      data: { status: CampaignStatus.RUNNING },
     });
 
     if (updated.count === 0) {
@@ -173,7 +165,7 @@ async function processNextQueuedCampaign(orgId: string) {
 
     // Get valid leads and send webhook
     const validLeads = queuedCampaign.leads
-      .filter((lead) => lead.status === 'PENDING')
+      .filter((lead) => lead.status === LeadStatus.PENDING)
       .map((lead) => ({
         name: lead.name || null,
         phone: lead.phone ? decrypt(lead.phone) : '',
@@ -185,7 +177,7 @@ async function processNextQueuedCampaign(orgId: string) {
       const dbLeads = await prisma.lead.findMany({
         where: {
           campaign_id: queuedCampaign.campaign_id,
-          status: 'PENDING',
+          status: LeadStatus.PENDING,
         },
         select: { lead_id: true },
         orderBy: { created_at: 'asc' },
@@ -212,12 +204,12 @@ async function processNextQueuedCampaign(orgId: string) {
 
         await prisma.campaign.update({
           where: { campaign_id: queuedCampaign.campaign_id },
-          data: { status: 'WAITING_FOR_CALLBACKS' },
+          data: { status: CampaignStatus.WAITING_FOR_CALLBACKS },
         });
       } catch (error) {
         await prisma.campaign.update({
           where: { campaign_id: queuedCampaign.campaign_id },
-          data: { status: 'FAILED' },
+          data: { status: CampaignStatus.FAILED },
         });
       }
     }

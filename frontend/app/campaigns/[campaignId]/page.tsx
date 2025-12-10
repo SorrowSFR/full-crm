@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import api from '@/lib/api';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { usePolling } from '@/hooks/use-polling';
 import Link from 'next/link';
 
 interface Lead {
@@ -44,28 +44,16 @@ export default function CampaignDetailPage() {
     fetchMetrics();
   }, [campaignId]);
 
-  useWebSocket(
-    (data) => {
-      // Handle lead update
-      if (data.campaign_id === campaignId) {
-        fetchCampaign();
-        fetchMetrics();
-      }
+  // Use polling for real-time updates (replaces WebSocket)
+  // Only poll if campaign is not completed
+  const isActive = campaign?.status !== 'COMPLETED' && campaign?.status !== 'FAILED';
+  usePolling(
+    () => {
+      fetchCampaign();
+      fetchMetrics();
     },
-    (data) => {
-      // Handle campaign progress
-      if (data.campaign_id === campaignId) {
-        fetchCampaign();
-        fetchMetrics();
-      }
-    },
-    (data) => {
-      // Handle campaign completed
-      if (data.campaign_id === campaignId) {
-        fetchCampaign();
-        fetchMetrics();
-      }
-    },
+    2000, // Poll every 2 seconds
+    isActive ?? true
   );
 
   const fetchCampaign = async () => {

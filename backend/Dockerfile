@@ -31,8 +31,8 @@ COPY prisma ./prisma/
 # Install production dependencies (this will skip postinstall since prisma isn't installed yet)
 RUN npm ci --only=production --ignore-scripts
 
-# Install prisma CLI temporarily to generate client
-RUN npm install --no-save prisma@^5.19.1 && npx prisma generate && npm uninstall prisma
+# Install prisma CLI (needed for migrations in start.sh)
+RUN npm install --no-save prisma@^5.19.1 && npx prisma generate
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist

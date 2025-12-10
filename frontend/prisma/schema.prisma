@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  org_id    String     @id @default(uuid())
+  name      String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  campaigns Campaign[]
+  users     User[]
+}
+
+model User {
+  user_id   String   @id @default(uuid())
+  org_id    String
+  email     String   @unique
+  password  String
+  name      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization Organization @relation(fields: [org_id], references: [org_id], onDelete: Cascade)
+
+  @@index([org_id])
+  @@index([email])
+}
+
+model Campaign {
+  campaign_id    String   @id @default(uuid())
+  org_id         String
+  agent_reference String
+  status         CampaignStatus @default(QUEUED)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  completed_at   DateTime?
+
+  organization Organization @relation(fields: [org_id], references: [org_id], onDelete: Cascade)
+  leads        Lead[]
+
+  @@index([org_id])
+  @@index([status])
+  @@index([org_id, status])
+}
+
+enum CampaignStatus {
+  QUEUED
+  RUNNING
+  WAITING_FOR_CALLBACKS
+  COMPLETED
+  FAILED
+}
+
+model Lead {
+  lead_id           String   @id @default(uuid())
+  campaign_id       String
+  name              String?
+  phone             String   // Encrypted
+  custom_fields     Json?
+  status            LeadStatus @default(PENDING)
+  outcome           LeadOutcome?
+  timestamp         DateTime?
+  meeting_details   Json?
+  site_visit_details Json?
+  error_type        String?
+  tags              Json?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaign_id], references: [campaign_id], onDelete: Cascade)
+
+  @@index([campaign_id])
+  @@index([status])
+  @@index([outcome])
+  @@index([campaign_id, status])
+}
+
+enum LeadStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  VALIDATION_ERROR
+}
+
+enum LeadOutcome {
+  QUALIFIED
+  SITE_VISIT_SCHEDULED
+  MEETING_SCHEDULED
+  NO_ANSWER
+  FAILED
+  VALIDATION_ERROR
+}
+
